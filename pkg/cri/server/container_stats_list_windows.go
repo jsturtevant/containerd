@@ -32,7 +32,6 @@ func (c *criService) containerMetrics(
 	meta containerstore.Metadata,
 	stats *types.Metric,
 ) (*runtime.ContainerStats, error) {
-	var cs runtime.ContainerStats
 	var usedBytes, inodesUsed uint64
 	sn, err := c.snapshotStore.Get(meta.ID)
 	// If snapshotstore doesn't have cached snapshot information
@@ -41,6 +40,12 @@ func (c *criService) containerMetrics(
 		usedBytes = sn.Size
 		inodesUsed = sn.Inodes
 	}
+
+	cs, err := cpuAndMemoryStats(stats)
+	if err != nil {
+		return cs, err
+	}
+
 	cs.WritableLayer = &runtime.FilesystemUsage{
 		Timestamp: sn.Timestamp,
 		FsId: &runtime.FilesystemIdentifier{
@@ -56,6 +61,11 @@ func (c *criService) containerMetrics(
 		Annotations: meta.Config.GetAnnotations(),
 	}
 
+	return cs, nil
+}
+
+func cpuAndMemoryStats(stats *types.Metric) (*runtime.ContainerStats, error) {
+	var cs runtime.ContainerStats
 	if stats != nil {
 		s, err := typeurl.UnmarshalAny(stats.Data)
 		if err != nil {

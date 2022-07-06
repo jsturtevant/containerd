@@ -33,7 +33,7 @@ func (c *criService) PodSandboxStats(
 		return nil, fmt.Errorf("an error occurred when trying to find sandbox %s: %w", r.GetPodSandboxId(), err)
 	}
 
-	metrics, err := metricsForSandbox(sandbox)
+	metrics, err := c.metricsForSandbox(ctx, sandbox)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting metrics for sandbox %s: %w", r.GetPodSandboxId(), err)
 	}

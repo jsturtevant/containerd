@@ -83,28 +83,9 @@ func (c *criService) podSandboxStats(
 			}
 		}
 
-		var pidCount uint64
-		for _, cntr := range c.containerStore.List() {
-			if cntr.SandboxID != sandbox.ID {
-				continue
-			}
-
-			state := cntr.Status.Get().State()
-			if state != runtime.ContainerState_CONTAINER_RUNNING {
-				continue
-			}
-
-			task, err := cntr.Container.Task(ctx, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			processes, err := task.Pids(ctx)
-			if err != nil {
-				return nil, err
-			}
-			pidCount += uint64(len(processes))
-
+		pidCount, err := c.getSandboxPidCount(ctx, sandbox)
+		if err != nil {
+			return nil, err
 		}
 		podSandboxStats.Linux.Process = &runtime.ProcessUsage{
 			Timestamp:    timestamp.UnixNano(),
@@ -143,7 +124,7 @@ func getContainerNetIO(ctx context.Context, netNsPath string) (rxBytes, rxErrors
 	return rxBytes, rxErrors, txBytes, txErrors
 }
 
-func metricsForSandbox(sandbox sandboxstore.Sandbox) (interface{}, error) {
+func (c *criService) metricsForSandbox(ctx context.Context, sandbox sandboxstore.Sandbox) (interface{}, error) {
 	cgroupPath := sandbox.Config.GetLinux().GetCgroupParent()
 
 	if cgroupPath == "" {

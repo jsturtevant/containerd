@@ -33,6 +33,6 @@ func (c *criService) podSandboxStats(ctx context.Context, sandbox sandboxstore.S
 	return nil, fmt.Errorf("pod sandbox stats not implemented: %w", errdefs.ErrNotImplemented)
 }
 
-func metricsForSandbox(sandbox sandboxstore.Sandbox) (interface{}, error) {
+func (c *criService) metricsForSandbox(ctx context.Context, sandbox sandboxstore.Sandbox) (interface{}, error) {
 	return nil, fmt.Errorf("metrics for sandbox not implemented: %w", errdefs.ErrNotImplemented)
 }

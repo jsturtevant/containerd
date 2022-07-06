@@ -33,7 +33,7 @@ func (c *criService) ListPodSandboxStats(
 
 	podSandboxStats := new(runtime.ListPodSandboxStatsResponse)
 	for _, sandbox := range sandboxes {
-		metrics, err := metricsForSandbox(sandbox)
+		metrics, err := c.metricsForSandbox(ctx, sandbox)
 		if err != nil {
 			return nil, fmt.Errorf("failed to obtain metrics for sandbox %q: %w", sandbox.ID, err)
 		}
@@ -77,4 +77,31 @@ func (c *criService) sandboxesForListPodSandboxStatsRequest(r *runtime.ListPodSa
 	}
 
 	return sandboxes
+}
+
+func (c *criService) getSandboxPidCount(ctx context.Context, sandbox sandboxstore.Sandbox) (uint64, error) {
+	var pidCount uint64
+	for _, cntr := range c.containerStore.List() {
+		if cntr.SandboxID != sandbox.ID {
+			continue
+		}
+
+		state := cntr.Status.Get().State()
+		if state != runtime.ContainerState_CONTAINER_RUNNING {
+			continue
+		}
+
+		task, err := cntr.Container.Task(ctx, nil)
+		if err != nil {
+			return 0, err
+		}
+
+		processes, err := task.Pids(ctx)
+		if err != nil {
+			return 0, err
+		}
+		pidCount += uint64(len(processes))
+
+	}
+	return pidCount, nil
 }
