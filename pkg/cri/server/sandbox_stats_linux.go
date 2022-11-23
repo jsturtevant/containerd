@@ -19,89 +19,17 @@ package server
 import (
 	"context"
 	"fmt"
-	"time"
-
-	"github.com/containernetworking/plugins/pkg/ns"
-	runtime "k8s.io/cri-api/pkg/apis/runtime/v1"
-
 	"github.com/containerd/cgroups/v3"
 	"github.com/containerd/cgroups/v3/cgroup1"
 	cgroupsv2 "github.com/containerd/cgroups/v3/cgroup2"
-
-	"github.com/vishvananda/netlink"
-
 	"github.com/containerd/containerd/log"
 	sandboxstore "github.com/containerd/containerd/pkg/cri/store/sandbox"
+	"github.com/containerd/containerd/pkg/cri/store/stats"
+	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/vishvananda/netlink"
+	runtime "k8s.io/cri-api/pkg/apis/runtime/v1"
+	"time"
 )
-
-func (c *criService) podSandboxStats(
-	ctx context.Context,
-	sandbox sandboxstore.Sandbox,
-	stats interface{},
-) (*runtime.PodSandboxStats, error) {
-	meta := sandbox.Metadata
-
-	if sandbox.Status.Get().State != sandboxstore.StateReady {
-		return nil, fmt.Errorf("failed to get pod sandbox stats since sandbox container %q is not in ready state", meta.ID)
-	}
-
-	var podSandboxStats runtime.PodSandboxStats
-	podSandboxStats.Attributes = &runtime.PodSandboxAttributes{
-		Id:          meta.ID,
-		Metadata:    meta.Config.GetMetadata(),
-		Labels:      meta.Config.GetLabels(),
-		Annotations: meta.Config.GetAnnotations(),
-	}
-
-	podSandboxStats.Linux = &runtime.LinuxPodSandboxStats{}
-
-	if stats != nil {
-		timestamp := time.Now()
-
-		cpuStats, err := c.cpuContainerStats(meta.ID, true /* isSandbox */, stats, timestamp)
-		if err != nil {
-			return nil, fmt.Errorf("failed to obtain cpu stats: %w", err)
-		}
-		podSandboxStats.Linux.Cpu = cpuStats
-
-		memoryStats, err := c.memoryContainerStats(meta.ID, stats, timestamp)
-		if err != nil {
-			return nil, fmt.Errorf("failed to obtain memory stats: %w", err)
-		}
-		podSandboxStats.Linux.Memory = memoryStats
-
-		if sandbox.NetNSPath != "" {
-			rxBytes, rxErrors, txBytes, txErrors := getContainerNetIO(ctx, sandbox.NetNSPath)
-			podSandboxStats.Linux.Network = &runtime.NetworkUsage{
-				DefaultInterface: &runtime.NetworkInterfaceUsage{
-					Name:     defaultIfName,
-					RxBytes:  &runtime.UInt64Value{Value: rxBytes},
-					RxErrors: &runtime.UInt64Value{Value: rxErrors},
-					TxBytes:  &runtime.UInt64Value{Value: txBytes},
-					TxErrors: &runtime.UInt64Value{Value: txErrors},
-				},
-			}
-		}
-
-		pidCount, err := c.getSandboxPidCount(ctx, sandbox)
-		if err != nil {
-			return nil, err
-		}
-		podSandboxStats.Linux.Process = &runtime.ProcessUsage{
-			Timestamp:    timestamp.UnixNano(),
-			ProcessCount: &runtime.UInt64Value{Value: pidCount},
-		}
-
-		listContainerStatsRequest := &runtime.ListContainerStatsRequest{Filter: &runtime.ContainerStatsFilter{PodSandboxId: meta.ID}}
-		resp, err := c.ListContainerStats(ctx, listContainerStatsRequest)
-		if err != nil {
-			return nil, fmt.Errorf("failed to obtain container stats during podSandboxStats call: %w", err)
-		}
-		podSandboxStats.Linux.Containers = resp.GetStats()
-	}
-
-	return &podSandboxStats, nil
-}
 
 // https://github.com/cri-o/cri-o/blob/74a5cf8dffd305b311eb1c7f43a4781738c388c1/internal/oci/stats.go#L32
 func getContainerNetIO(ctx context.Context, netNsPath string) (rxBytes, rxErrors, txBytes, txErrors uint64) {
@@ -156,4 +84,56 @@ func (c *criService) metricsForSandbox(ctx context.Context, sandbox sandboxstore
 	}
 
 	return statsx, nil
+}
+
+func initializeStats(podSandboxStats *runtime.PodSandboxStats) {
+	podSandboxStats.Linux = &runtime.LinuxPodSandboxStats{}
+}
+
+func setCPUStats(podSandboxStats *runtime.PodSandboxStats, cpuStats *runtime.CpuUsage) {
+	podSandboxStats.Linux.Cpu = cpuStats
+}
+
+func setMemoryStats(podSandboxStats *runtime.PodSandboxStats, memoryStats *runtime.MemoryUsage) {
+	podSandboxStats.Linux.Memory = memoryStats
+}
+
+func setNetworkUsageStates(ctx context.Context, podSandboxStats *runtime.PodSandboxStats, sandbox sandboxstore.Sandbox) {
+	if sandbox.NetNSPath != "" {
+		rxBytes, rxErrors, txBytes, txErrors := getContainerNetIO(ctx, sandbox.NetNSPath)
+		podSandboxStats.Linux.Network = &runtime.NetworkUsage{
+			DefaultInterface: &runtime.NetworkInterfaceUsage{
+				Name:     defaultIfName,
+				RxBytes:  &runtime.UInt64Value{Value: rxBytes},
+				RxErrors: &runtime.UInt64Value{Value: rxErrors},
+				TxBytes:  &runtime.UInt64Value{Value: txBytes},
+				TxErrors: &runtime.UInt64Value{Value: txErrors},
+			},
+		}
+	}
+}
+
+func setPIDStats(podSandboxStats *runtime.PodSandboxStats, timestamp time.Time, pidCount uint64) {
+	podSandboxStats.Linux.Process = &runtime.ProcessUsage{
+		Timestamp:    timestamp.UnixNano(),
+		ProcessCount: &runtime.UInt64Value{Value: pidCount},
+	}
+}
+
+func setContainerStats(podSandboxStats *runtime.PodSandboxStats, containerStats []*runtime.ContainerStats) {
+	podSandboxStats.Linux.Containers = containerStats
+}
+
+func (c *criService) saveSandBoxMetrics(cntrID string, sandboxStats *runtime.PodSandboxStats) error {
+	// we may not have stats since container hasn't started yet so skip saving to cache
+	if sandboxStats == nil || sandboxStats.Linux.Cpu == nil ||
+		sandboxStats.Linux.Cpu.UsageCoreNanoSeconds == nil {
+		return nil
+	}
+
+	newStats := &stats.ContainerStats{
+		UsageCoreNanoSeconds: sandboxStats.Linux.Cpu.UsageCoreNanoSeconds.Value,
+		Timestamp:            time.Unix(0, sandboxStats.Linux.Cpu.Timestamp),
+	}
+	return c.sandboxStore.UpdateContainerStats(cntrID, newStats)
 }

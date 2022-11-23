@@ -36,3 +36,32 @@ func (c *criService) podSandboxStats(ctx context.Context, sandbox sandboxstore.S
 func (c *criService) metricsForSandbox(ctx context.Context, sandbox sandboxstore.Sandbox) (interface{}, error) {
 	return nil, fmt.Errorf("metrics for sandbox not implemented: %w", errdefs.ErrNotImplemented)
 }
+
+func initializeStats(podSandboxStats *runtime.PodSandboxStats) {
+	// not implemented
+}
+
+func setCPUStats(podSandboxStats *runtime.PodSandboxStats, cpuStats *runtime.CpuUsage) {
+	// not implemented
+}
+
+func setMemoryStats(podSandboxStats *runtime.PodSandboxStats, memoryStats *runtime.MemoryUsage) {
+	// not implemented
+}
+
+func setNetworkUsageStates(ctx context.Context, podSandboxStats *runtime.PodSandboxStats, sandbox sandboxstore.Sandbox) {
+	// not implemented
+}
+
+func setPIDStats(podSandboxStats *runtime.PodSandboxStats, timestamp time.Time, pidCount uint64) {
+	// not implemented
+}
+
+func setContainerStats(podSandboxStats *runtime.PodSandboxStats, containerStats []*runtime.ContainerStats) {
+	// not implemented
+}
+
+func (c *criService) saveSandBoxMetrics(cntrID string, sandboxStats *runtime.PodSandboxStats) error {
+	// not implemented
+	return nil, fmt.Errorf("pod sandbox stats not implemented: %w", errdefs.ErrNotImplemented)
+}

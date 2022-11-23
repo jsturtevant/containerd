@@ -19,6 +19,8 @@ package server
 import (
 	"context"
 	"fmt"
+	sandboxstore "github.com/containerd/containerd/pkg/cri/store/sandbox"
+	"time"
 
 	runtime "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
@@ -43,5 +45,67 @@ func (c *criService) PodSandboxStats(
 		return nil, fmt.Errorf("failed to decode pod sandbox metrics %s: %w", r.GetPodSandboxId(), err)
 	}
 
+	// save updated metrics in the cache
+	// don't need to save each container stat since we use ListContainerStats which handles this
+	err = c.saveSandBoxMetrics(sandbox.ID, podSandboxStats)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update container stats ID: %s: %w", sandbox.Metadata.ID, err)
+	}
+
 	return &runtime.PodSandboxStatsResponse{Stats: podSandboxStats}, nil
+}
+
+func (c *criService) podSandboxStats(
+	ctx context.Context,
+	sandbox sandboxstore.Sandbox,
+	stats interface{},
+) (*runtime.PodSandboxStats, error) {
+	meta := sandbox.Metadata
+
+	if sandbox.Status.Get().State != sandboxstore.StateReady {
+		return nil, fmt.Errorf("failed to get pod sandbox stats since sandbox container %q is not in ready state", meta.ID)
+	}
+
+	podSandboxStats := &runtime.PodSandboxStats{}
+	podSandboxStats.Attributes = &runtime.PodSandboxAttributes{
+		Id:          meta.ID,
+		Metadata:    meta.Config.GetMetadata(),
+		Labels:      meta.Config.GetLabels(),
+		Annotations: meta.Config.GetAnnotations(),
+	}
+
+	initializeStats(podSandboxStats)
+
+	if stats != nil {
+		timestamp := time.Now()
+
+		cpuStats, err := c.cpuContainerStats(sandbox.Stats, stats, timestamp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to obtain cpu stats: %w", err)
+		}
+		setCPUStats(podSandboxStats, cpuStats)
+
+		memoryStats, err := c.memoryContainerStats(stats, timestamp)
+		if err != nil {
+			return nil, fmt.Errorf("failed to obtain memory stats: %w", err)
+		}
+		setMemoryStats(podSandboxStats, memoryStats)
+
+		setNetworkUsageStates(ctx, podSandboxStats, sandbox)
+
+		pidCount, err := c.getSandboxPidCount(ctx, sandbox)
+		if err != nil {
+			return nil, err
+		}
+		setPIDStats(podSandboxStats, timestamp, pidCount)
+
+		listContainerStatsRequest := &runtime.ListContainerStatsRequest{Filter: &runtime.ContainerStatsFilter{PodSandboxId: meta.ID}}
+		resp, err := c.ListContainerStats(ctx, listContainerStatsRequest)
+		if err != nil {
+			return nil, fmt.Errorf("failed to obtain container stats during podSandboxStats call: %w", err)
+		}
+		setContainerStats(podSandboxStats, resp.GetStats())
+	}
+
+	return podSandboxStats, nil
 }
