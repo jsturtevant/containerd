@@ -20,18 +20,18 @@ package server
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/containerd/containerd/api/types"
 	"github.com/containerd/containerd/errdefs"
 	runtime "k8s.io/cri-api/pkg/apis/runtime/v1"
-
-	containerstore "github.com/containerd/containerd/pkg/cri/store/container"
 )
 
-func (c *criService) containerMetrics(
-	meta containerstore.Metadata,
-	stats *types.Metric,
-) (*runtime.ContainerStats, error) {
-	var cs runtime.ContainerStats
+func createCPUStats(newStats interface{}, timestamp time.Time) (*runtime.CpuUsage, error) {
+	var cs runtime.CpuUsage
 	return &cs, fmt.Errorf("container metrics: %w", errdefs.ErrNotImplemented)
+}
+
+func (c *criService) memoryContainerStats(stats interface{}, timestamp time.Time) (*runtime.MemoryUsage, error) {
+	var m runtime.MemoryUsage
+	return &m, fmt.Errorf("container metrics: %w", errdefs.ErrNotImplemented)
 }

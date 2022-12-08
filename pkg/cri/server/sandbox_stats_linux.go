@@ -19,6 +19,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/containerd/containerd/pkg/cri/store/stats"
 	"time"
 
 	"github.com/containernetworking/plugins/pkg/ns"
@@ -58,13 +59,13 @@ func (c *criService) podSandboxStats(
 	if stats != nil {
 		timestamp := time.Now()
 
-		cpuStats, err := c.cpuContainerStats(meta.ID, true /* isSandbox */, stats, timestamp)
+		cpuStats, err := c.cpuContainerStats(sandbox.Stats, stats, timestamp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to obtain cpu stats: %w", err)
 		}
 		podSandboxStats.Linux.Cpu = cpuStats
 
-		memoryStats, err := c.memoryContainerStats(meta.ID, stats, timestamp)
+		memoryStats, err := c.memoryContainerStats(stats, timestamp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to obtain memory stats: %w", err)
 		}
@@ -175,4 +176,18 @@ func metricsForSandbox(sandbox sandboxstore.Sandbox) (interface{}, error) {
 	}
 
 	return statsx, nil
+}
+
+func (c *criService) saveSandBoxMetrics(sandboxID string, sandboxStats *runtime.PodSandboxStats) error {
+	// we may not have stats since container hasn't started yet so skip saving to cache
+	if sandboxStats == nil || sandboxStats.Linux.Cpu == nil ||
+		sandboxStats.Linux.Cpu.UsageCoreNanoSeconds == nil {
+		return nil
+	}
+	// don't need to save each container stat since Linux uses ListContainerStats which handles this
+	newStats := &stats.ContainerStats{
+		UsageCoreNanoSeconds: sandboxStats.Linux.Cpu.UsageCoreNanoSeconds.Value,
+		Timestamp:            time.Unix(0, sandboxStats.Linux.Cpu.Timestamp),
+	}
+	return c.sandboxStore.UpdateContainerStats(sandboxID, newStats)
 }

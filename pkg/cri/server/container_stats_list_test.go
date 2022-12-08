@@ -21,11 +21,11 @@ import (
 	"time"
 
 	containerstore "github.com/containerd/containerd/pkg/cri/store/container"
+	"github.com/containerd/containerd/pkg/cri/store/stats"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestContainerMetricsCPUNanoCoreUsage(t *testing.T) {
-	c := newTestCRIService()
 	timestamp := time.Now()
 	secondAfterTimeStamp := timestamp.Add(time.Second)
 	ID := "ID"
@@ -48,26 +48,24 @@ func TestContainerMetricsCPUNanoCoreUsage(t *testing.T) {
 				containerstore.Metadata{ID: ID},
 			)
 			assert.NoError(t, err)
+
+			// calculate for first iteration
+			// first run so container stats will be nil
 			assert.Nil(t, container.Stats)
-			err = c.containerStore.Add(container)
+			cpuUsage := getUsageNanoCores(container.Stats, test.firstCPUValue, timestamp)
 			assert.NoError(t, err)
-
-			cpuUsage, err := c.getUsageNanoCores(ID, false, test.firstCPUValue, timestamp)
-			assert.NoError(t, err)
-
-			container, err = c.containerStore.Get(ID)
-			assert.NoError(t, err)
-			assert.NotNil(t, container.Stats)
-
 			assert.Equal(t, test.expectedNanoCoreUsageFirst, cpuUsage)
 
-			cpuUsage, err = c.getUsageNanoCores(ID, false, test.secondCPUValue, secondAfterTimeStamp)
+			// fill in the stats as if they now exist
+			container.Stats = &stats.ContainerStats{}
+			container.Stats.UsageCoreNanoSeconds = test.firstCPUValue
+			container.Stats.Timestamp = timestamp
+			assert.NotNil(t, container.Stats)
+
+			// calculate for second iteration
+			cpuUsage = getUsageNanoCores(container.Stats, test.secondCPUValue, secondAfterTimeStamp)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedNanoCoreUsageSecond, cpuUsage)
-
-			container, err = c.containerStore.Get(ID)
-			assert.NoError(t, err)
-			assert.NotNil(t, container.Stats)
 		})
 	}
 

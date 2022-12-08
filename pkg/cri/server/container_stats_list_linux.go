@@ -20,65 +20,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/containerd/containerd/api/types"
 	v1 "github.com/containerd/containerd/metrics/types/v1"
 	v2 "github.com/containerd/containerd/metrics/types/v2"
-	"github.com/containerd/containerd/protobuf"
-	"github.com/containerd/typeurl"
 	runtime "k8s.io/cri-api/pkg/apis/runtime/v1"
-
-	containerstore "github.com/containerd/containerd/pkg/cri/store/container"
 )
-
-func (c *criService) containerMetrics(
-	meta containerstore.Metadata,
-	stats *types.Metric,
-) (*runtime.ContainerStats, error) {
-	var cs runtime.ContainerStats
-	var usedBytes, inodesUsed uint64
-	sn, err := c.snapshotStore.Get(meta.ID)
-	// If snapshotstore doesn't have cached snapshot information
-	// set WritableLayer usage to zero
-	if err == nil {
-		usedBytes = sn.Size
-		inodesUsed = sn.Inodes
-	}
-	cs.WritableLayer = &runtime.FilesystemUsage{
-		Timestamp: sn.Timestamp,
-		FsId: &runtime.FilesystemIdentifier{
-			Mountpoint: c.imageFSPath,
-		},
-		UsedBytes:  &runtime.UInt64Value{Value: usedBytes},
-		InodesUsed: &runtime.UInt64Value{Value: inodesUsed},
-	}
-	cs.Attributes = &runtime.ContainerAttributes{
-		Id:          meta.ID,
-		Metadata:    meta.Config.GetMetadata(),
-		Labels:      meta.Config.GetLabels(),
-		Annotations: meta.Config.GetAnnotations(),
-	}
-
-	if stats != nil {
-		s, err := typeurl.UnmarshalAny(stats.Data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract container metrics: %w", err)
-		}
-
-		cpuStats, err := c.cpuContainerStats(meta.ID, false /* isSandbox */, s, protobuf.FromTimestamp(stats.Timestamp))
-		if err != nil {
-			return nil, fmt.Errorf("failed to obtain cpu stats: %w", err)
-		}
-		cs.Cpu = cpuStats
-
-		memoryStats, err := c.memoryContainerStats(meta.ID, s, protobuf.FromTimestamp(stats.Timestamp))
-		if err != nil {
-			return nil, fmt.Errorf("failed to obtain memory stats: %w", err)
-		}
-		cs.Memory = memoryStats
-	}
-
-	return &cs, nil
-}
 
 // getWorkingSet calculates workingset memory from cgroup memory stats.
 // The caller should make sure memory is not nil.
@@ -131,11 +76,10 @@ func getAvailableBytesV2(memory *v2.MemoryStat, workingSetBytes uint64) uint64 {
 	return 0
 }
 
-func (c *criService) cpuContainerStats(ID string, isSandbox bool, stats interface{}, timestamp time.Time) (*runtime.CpuUsage, error) {
-	switch metrics := stats.(type) {
+func createCPUStats(newStats interface{}, timestamp time.Time) (*runtime.CpuUsage, error) {
+	switch metrics := newStats.(type) {
 	case *v1.Metrics:
 		if metrics.CPU != nil && metrics.CPU.Usage != nil {
-
 			return &runtime.CpuUsage{
 				Timestamp:            timestamp.UnixNano(),
 				UsageCoreNanoSeconds: &runtime.UInt64Value{Value: metrics.CPU.Usage.Total},
@@ -157,7 +101,7 @@ func (c *criService) cpuContainerStats(ID string, isSandbox bool, stats interfac
 	return nil, nil
 }
 
-func (c *criService) memoryContainerStats(ID string, stats interface{}, timestamp time.Time) (*runtime.MemoryUsage, error) {
+func (c *criService) memoryContainerStats(stats interface{}, timestamp time.Time) (*runtime.MemoryUsage, error) {
 	switch metrics := stats.(type) {
 	case *v1.Metrics:
 		if metrics.Memory != nil && metrics.Memory.Usage != nil {

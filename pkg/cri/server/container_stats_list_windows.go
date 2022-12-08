@@ -17,68 +17,54 @@
 package server
 
 import (
-	"errors"
 	"fmt"
+	"time"
 
 	wstats "github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/stats"
-	"github.com/containerd/containerd/api/types"
-	"github.com/containerd/typeurl"
 	runtime "k8s.io/cri-api/pkg/apis/runtime/v1"
-
-	containerstore "github.com/containerd/containerd/pkg/cri/store/container"
 )
 
-func (c *criService) containerMetrics(
-	meta containerstore.Metadata,
-	stats *types.Metric,
-) (*runtime.ContainerStats, error) {
-	var cs runtime.ContainerStats
-	var usedBytes, inodesUsed uint64
-	sn, err := c.snapshotStore.Get(meta.ID)
-	// If snapshotstore doesn't have cached snapshot information
-	// set WritableLayer usage to zero
-	if err == nil {
-		usedBytes = sn.Size
-		inodesUsed = sn.Inodes
+func createCPUStats(newStats interface{}, timestamp time.Time) (*runtime.CpuUsage, error) {
+	switch metrics := newStats.(type) {
+	case *wstats.Statistics:
+		if metrics != nil {
+			wstats := metrics.GetWindows()
+			if wstats == nil {
+				return nil, fmt.Errorf("windows stats is empty")
+			}
+			if wstats.Processor != nil {
+				return &runtime.CpuUsage{
+					Timestamp:            wstats.Timestamp.UnixNano(),
+					UsageCoreNanoSeconds: &runtime.UInt64Value{Value: wstats.Processor.TotalRuntimeNS},
+				}, nil
+			}
+		}
+	default:
+		return nil, fmt.Errorf("unexpected metrics type: %v", metrics)
 	}
-	cs.WritableLayer = &runtime.FilesystemUsage{
-		Timestamp: sn.Timestamp,
-		FsId: &runtime.FilesystemIdentifier{
-			Mountpoint: c.imageFSPath,
-		},
-		UsedBytes:  &runtime.UInt64Value{Value: usedBytes},
-		InodesUsed: &runtime.UInt64Value{Value: inodesUsed},
-	}
-	cs.Attributes = &runtime.ContainerAttributes{
-		Id:          meta.ID,
-		Metadata:    meta.Config.GetMetadata(),
-		Labels:      meta.Config.GetLabels(),
-		Annotations: meta.Config.GetAnnotations(),
-	}
+	return nil, nil
+}
 
-	if stats != nil {
-		s, err := typeurl.UnmarshalAny(stats.Data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract container metrics: %w", err)
-		}
-		wstats := s.(*wstats.Statistics).GetWindows()
-		if wstats == nil {
-			return nil, errors.New("windows stats is empty")
-		}
-		if wstats.Processor != nil {
-			cs.Cpu = &runtime.CpuUsage{
-				Timestamp:            wstats.Timestamp.UnixNano(),
-				UsageCoreNanoSeconds: &runtime.UInt64Value{Value: wstats.Processor.TotalRuntimeNS},
+func (c *criService) memoryContainerStats(stats interface{}, timestamp time.Time) (*runtime.MemoryUsage, error) {
+	switch metrics := stats.(type) {
+	case *wstats.Statistics:
+		if metrics != nil {
+			wstats := metrics.GetWindows()
+
+			if wstats == nil {
+				return nil, fmt.Errorf("windows stats is empty")
+			}
+			if wstats.Memory != nil {
+				return &runtime.MemoryUsage{
+					Timestamp: wstats.Timestamp.UnixNano(),
+					WorkingSetBytes: &runtime.UInt64Value{
+						Value: wstats.Memory.MemoryUsagePrivateWorkingSetBytes,
+					},
+				}, nil
 			}
 		}
-		if wstats.Memory != nil {
-			cs.Memory = &runtime.MemoryUsage{
-				Timestamp: wstats.Timestamp.UnixNano(),
-				WorkingSetBytes: &runtime.UInt64Value{
-					Value: wstats.Memory.MemoryUsagePrivateWorkingSetBytes,
-				},
-			}
-		}
+	default:
+		return nil, fmt.Errorf("unexpected metrics type: %v", metrics)
 	}
-	return &cs, nil
+	return nil, nil
 }

@@ -33,3 +33,7 @@ func (c *criService) podSandboxStats(ctx context.Context, sandbox sandboxstore.S
 func metricsForSandbox(sandbox sandboxstore.Sandbox) (interface{}, error) {
 	return nil, fmt.Errorf("metrics for sandbox not implemented on windows: %w", errdefs.ErrNotImplemented)
 }
+
+func (c *criService) saveSandBoxMetrics(sandboxID string, sandboxStats *runtime.PodSandboxStats) error {
+	return fmt.Errorf("metrics for sandbox not implemented on windows: %w", errdefs.ErrNotImplemented)
+}

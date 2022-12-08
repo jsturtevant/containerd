@@ -43,5 +43,11 @@ func (c *criService) PodSandboxStats(
 		return nil, fmt.Errorf("failed to decode pod sandbox metrics %s: %w", r.GetPodSandboxId(), err)
 	}
 
+	// save updated metrics in the cache
+	err = c.saveSandBoxMetrics(sandbox.ID, podSandboxStats)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update container stats ID: %s: %w", sandbox.Metadata.ID, err)
+	}
+
 	return &runtime.PodSandboxStatsResponse{Stats: podSandboxStats}, nil
 }
