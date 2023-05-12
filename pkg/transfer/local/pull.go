@@ -204,6 +204,17 @@ func (ts *localTransferService) pull(ctx context.Context, ir transfer.ImageFetch
 		}
 	}
 
+	wasmInfo, err := store.Info(ctx, desc.Digest)
+	if err != nil {
+
+	}
+	if newDesc, ok := wasmInfo.Labels["wasm-unpacked"]; ok {
+		if desc.Annotations == nil {
+			desc.Annotations = map[string]string{}
+		}
+		desc.Annotations["wasm-unpacked"] = newDesc
+	}
+
 	imgs, err := is.Store(ctx, desc, ts.images)
 	if err != nil {
 		return err

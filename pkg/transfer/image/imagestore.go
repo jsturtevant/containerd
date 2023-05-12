@@ -19,6 +19,7 @@ package image
 import (
 	"context"
 	"fmt"
+	"github.com/opencontainers/go-digest"
 
 	"github.com/containerd/typeurl/v2"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -214,6 +215,14 @@ func (is *Store) ImageFilter(h images.HandlerFunc, cs content.Store) images.Hand
 
 func (is *Store) Store(ctx context.Context, desc ocispec.Descriptor, store images.Store) ([]images.Image, error) {
 	var imgs []images.Image
+
+	if newDesc, ok := desc.Annotations["wasm-unpacked"]; ok {
+		if is.imageLabels == nil {
+			is.imageLabels = map[string]string{}
+		}
+		is.imageLabels["wasm-original"] = desc.Digest.String()
+		desc.Digest = digest.Digest(newDesc)
+	}
 
 	// If import ref type, store references from annotation or prefix
 	if refSource, ok := desc.Annotations["io.containerd.import.ref-source"]; ok {

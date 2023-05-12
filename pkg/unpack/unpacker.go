@@ -17,13 +17,19 @@
 package unpack
 
 import (
+	"archive/tar"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -163,7 +169,265 @@ func (u *Unpacker) Unpack(h images.Handler) images.Handler {
 		lock   sync.Mutex
 		layers = map[digest.Digest][]ocispec.Descriptor{}
 	)
-	return images.HandlerFunc(func(ctx context.Context, desc ocispec.Descriptor) ([]ocispec.Descriptor, error) {
+
+	wasmHandler := images.HandlerFunc(func(ctx context.Context, desc ocispec.Descriptor) ([]ocispec.Descriptor, error) {
+		unlock, err := u.lockBlobDescriptor(ctx, desc)
+		if err != nil {
+			return nil, err
+		}
+		children, err := h.Handle(ctx, desc)
+		unlock()
+		if err != nil {
+			return children, err
+		}
+
+		fetchesDone, fetchErr := u.fetchAsync(ctx, children, h)
+		for _, c := range fetchesDone {
+			select {
+			case <-ctx.Done():
+				cleanup.Do(ctx, func(ctx context.Context) {})
+				return children, ctx.Err()
+			case err := <-fetchErr:
+				if err != nil {
+					cleanup.Do(ctx, func(ctx context.Context) {})
+					return children, err
+				}
+			case <-c:
+			}
+		}
+
+		wasmDescs := []ocispec.Descriptor{}
+		switch desc.MediaType {
+		case ocispec.MediaTypeImageManifest:
+			var config *ocispec.Descriptor
+			var wasmModules []ocispec.Descriptor
+			var wasmComponents []ocispec.Descriptor
+
+			manifestInfo, err := u.content.Info(ctx, desc.Digest)
+			if err != nil {
+				return children, err
+			}
+			if manifestInfo.Labels["wasm-unpacked"] != "" {
+				return children, err
+			}
+			for i, child := range children {
+				if child.MediaType == "application/vnd.w3c.wasm.module.v1+json" {
+					config = &children[i]
+					continue
+				}
+				if child.MediaType == "application/vnd.w3c.wasm.module.v1+wasm" {
+					wasmModules = append(wasmModules, children[i])
+					continue
+				}
+				if child.MediaType == "application/vnd.w3c.wasm.component.v1+wasm" {
+					wasmComponents = append(wasmComponents, children[i])
+					continue
+				}
+			}
+
+			if config == nil {
+				log.G(ctx).Debug("not a wasm image. not processing as wasm")
+				return children, nil
+			}
+
+			if len(wasmModules) == 0 && len(wasmComponents) == 0 {
+				log.G(ctx).Debug("not a wasm image. not processing as wasm")
+				return children, nil
+			}
+
+			if len(wasmModules) > 0 && len(wasmComponents) > 0 {
+				return nil, fmt.Errorf("image contains both wasm modules and components. This isn't currently supported")
+			}
+
+			if len(wasmModules) == 1 && runtime.GOOS == "windows" {
+				// write new layer
+				moduleReader, err := u.content.ReaderAt(ctx, ocispec.Descriptor{Digest: wasmModules[0].Digest})
+				if err != nil {
+					return nil, err
+				}
+				defer moduleReader.Close()
+
+				var newTarBuffer bytes.Buffer
+				newTarWriter := tar.NewWriter(&newTarBuffer)
+				tr := tar.NewReader(content.NewReader(moduleReader))
+
+				for {
+					hdr, err := tr.Next()
+					if err == io.EOF {
+						break // End of archive
+					}
+					if err != nil {
+						return nil, fmt.Errorf("error copying tar: %w", err)
+					}
+
+					if strings.HasSuffix(hdr.Name, ".wasm") {
+						//fmt.Printf("Found Wasm File, moving to correct location %s:\n", hdr.Name)
+						createFolderHeader(newTarWriter, "Files")
+						createFolderHeader(newTarWriter, "Files/Windows")
+						createFolderHeader(newTarWriter, "Files/Windows/System32")
+						createFolderHeader(newTarWriter, "Files/Windows/System32/config")
+						createFile(newTarWriter, "Files/Windows/System32/config/DEFAULT")
+						createFile(newTarWriter, "Files/Windows/System32/config/SAM")
+						createFile(newTarWriter, "Files/Windows/System32/config/SECURITY")
+						createFile(newTarWriter, "Files/Windows/System32/config/SOFTWARE")
+						createFile(newTarWriter, "Files/Windows/System32/config/SYSTEM")
+
+						hdr.Name = "Files/" + hdr.Name
+						if err := newTarWriter.WriteHeader(hdr); err != nil {
+							return nil, fmt.Errorf("error copying tar: %w", err)
+						}
+
+						if _, err := io.Copy(newTarWriter, tr); err != nil {
+							return nil, fmt.Errorf("error copying tar: %w", err)
+						}
+						continue
+					}
+
+					//fmt.Printf("writing file with name %s:\n", hdr.Name)
+					if err := newTarWriter.WriteHeader(hdr); err != nil {
+						return nil, fmt.Errorf("error copying tar: %w", err)
+					}
+
+					if _, err := io.Copy(newTarWriter, tr); err != nil {
+						return nil, fmt.Errorf("error copying tar: %w", err)
+					}
+				}
+				if err := newTarWriter.Close(); err != nil {
+					return nil, fmt.Errorf("error copying tar: %w", err)
+				}
+
+				moduleLayerWriter, err := u.content.Writer(ctx,
+					content.WithRef("wasm-module-"+wasmModules[0].Digest.String()),
+					content.WithDescriptor(ocispec.Descriptor{MediaType: "application/vnd.oci.image.layer.v1.tar"}),
+				)
+				if err != nil {
+					return nil, err
+				}
+
+				if _, err := io.Copy(moduleLayerWriter, &newTarBuffer); err != nil {
+					return nil, fmt.Errorf("error copying tar: %w", err)
+				}
+
+				if err := moduleLayerWriter.Commit(ctx, 0, moduleLayerWriter.Digest(), content.WithLabels(map[string]string{"wasm-module-original": wasmModules[0].Digest.String()})); err != nil {
+					return nil, fmt.Errorf("error copying tar: %w", err)
+				}
+				layerInfo := content.Info{
+					Digest: wasmModules[0].Digest,
+					Labels: map[string]string{
+						"wasm-unpacked": moduleLayerWriter.Digest().String(),
+					},
+				}
+				u.content.Update(ctx, layerInfo, fmt.Sprintf("labels.%s", "wasm-unpacked"))
+
+				//wasmDescs = append(wasmDescs, ocispec.Descriptor{
+				//	MediaType: "application/vnd.oci.image.layer.v1.tar",
+				//	Digest:    moduleLayerWriter.Digest(),
+				//})
+
+				// update the image config layers.
+				configReader, err := u.content.ReaderAt(ctx, ocispec.Descriptor{Digest: config.Digest})
+				if err != nil {
+					return nil, err
+				}
+				defer configReader.Close()
+
+				spec := ocispec.Image{}
+				data, err := io.ReadAll(content.NewReader(configReader))
+				if err != nil {
+					return nil, err
+				}
+				json.Unmarshal(data, &spec)
+				spec.RootFS.DiffIDs = []digest.Digest{}
+				spec.RootFS.DiffIDs = append(spec.RootFS.DiffIDs, moduleLayerWriter.Digest())
+				spec.OS = "windows"
+				spec.Architecture = "amd64"
+
+				configWriter, err := u.content.Writer(ctx,
+					content.WithRef("wasm-"+wasmModules[0].Digest.String()),
+					content.WithDescriptor(ocispec.Descriptor{MediaType: "application/vnd.oci.image.layer.v1.tar"}),
+				)
+				if err != nil {
+					return nil, err
+				}
+
+				json.NewEncoder(configWriter).Encode(spec)
+				if err := configWriter.Commit(ctx, 0, configWriter.Digest(), content.WithLabels(map[string]string{"wasm-config-original": config.Digest.String()})); err != nil {
+					return nil, fmt.Errorf("error copying tar: %w", err)
+				}
+				configInfo := content.Info{
+					Digest: config.Digest,
+					Labels: map[string]string{
+						"wasm-unpacked": configWriter.Digest().String(),
+					},
+				}
+				u.content.Update(ctx, configInfo, fmt.Sprintf("labels.%s", "wasm-unpacked"))
+
+				//wasmDescs = append(wasmDescs, ocispec.Descriptor{
+				//	MediaType: "application/vnd.oci.image.config.v1+json",
+				//	Digest:    moduleLayerWriter.Digest(),
+				//})
+
+				// update the manifest.
+				manifestReader, err := u.content.ReaderAt(ctx, ocispec.Descriptor{Digest: desc.Digest})
+				if err != nil {
+					return nil, err
+				}
+				defer manifestReader.Close()
+
+				manifest := ocispec.Manifest{}
+				data, err = io.ReadAll(content.NewReader(manifestReader))
+				if err != nil {
+					return nil, err
+				}
+				json.Unmarshal(data, &manifest)
+
+				manifest.Layers = []ocispec.Descriptor{}
+				manifest.Layers = append(manifest.Layers, ocispec.Descriptor{
+					MediaType: "application/vnd.oci.image.layer.v1.tar",
+					Digest:    moduleLayerWriter.Digest(),
+				})
+				manifest.Config = ocispec.Descriptor{
+					MediaType: "application/vnd.oci.image.config.v1+json",
+					Digest:    configWriter.Digest(),
+				}
+
+				manifestWriter, err := u.content.Writer(ctx,
+					content.WithRef("wasm-"+desc.Digest.String()),
+					content.WithDescriptor(ocispec.Descriptor{MediaType: "application/vnd.oci.image.manifest.v1+json"}),
+				)
+				if err != nil {
+					return nil, err
+				}
+
+				json.NewEncoder(manifestWriter).Encode(manifest)
+				if err := manifestWriter.Commit(ctx, 0, manifestWriter.Digest(), content.WithLabels(map[string]string{"wasm-config-original": desc.Digest.String()})); err != nil {
+					return nil, fmt.Errorf("error copying tar: %w", err)
+				}
+				manifestInfo := content.Info{
+					Digest: desc.Digest,
+					Labels: map[string]string{
+						"wasm-unpacked": manifestWriter.Digest().String(),
+					},
+				}
+				u.content.Update(ctx, manifestInfo, fmt.Sprintf("labels.%s", "wasm-unpacked"))
+
+				wasmDescs = append(wasmDescs, ocispec.Descriptor{
+					MediaType: "application/vnd.oci.image.manifest.v1+json",
+					Digest:    manifestWriter.Digest(),
+				})
+			}
+
+			if len(wasmModules) > 0 {
+				//TODO
+				// append them together and write them to a new tar file.
+				// update the image spec layer.
+			}
+		}
+
+		return wasmDescs, nil
+	})
+
+	defaultunpacker := images.HandlerFunc(func(ctx context.Context, desc ocispec.Descriptor) ([]ocispec.Descriptor, error) {
 		ctx, span := tracing.StartSpan(ctx, tracing.Name(unpackSpanPrefix, "UnpackHandler"))
 		defer span.End()
 		span.SetAttributes(
@@ -215,6 +479,36 @@ func (u *Unpacker) Unpack(h images.Handler) images.Handler {
 		}
 		return children, nil
 	})
+
+	return images.Handlers(wasmHandler, defaultunpacker)
+}
+
+func createFolderHeader(tw *tar.Writer, name string) {
+	system32 := &tar.Header{
+		Name:     name,
+		Typeflag: tar.TypeDir,
+	}
+
+	if err := tw.WriteHeader(system32); err != nil {
+
+		os.Exit(1)
+	}
+}
+
+func createFile(tw *tar.Writer, name string) {
+	system32 := &tar.Header{
+		Name: name,
+		Mode: 0600,
+		Size: int64(len("")),
+	}
+
+	if err := tw.WriteHeader(system32); err != nil {
+		os.Exit(1)
+	}
+
+	if _, err := tw.Write([]byte("")); err != nil {
+		os.Exit(1)
+	}
 }
 
 // Wait waits for any ongoing unpack processes to complete then will return
@@ -274,9 +568,8 @@ func (u *Unpacker) unpack(
 
 		chain []digest.Digest
 
-		fetchOffset int
-		fetchC      []chan struct{}
-		fetchErr    chan error
+		fetchC   []chan struct{}
+		fetchErr chan error
 	)
 
 	// If there is an early return, ensure any ongoing
@@ -349,23 +642,13 @@ func (u *Unpacker) unpack(
 			}
 		}
 
+		// only kick off fetch the first time
 		if fetchErr == nil {
-			fetchErr = make(chan error, 1)
-			fetchOffset = i
-			fetchC = make([]chan struct{}, len(layers)-fetchOffset)
-			for i := range fetchC {
-				fetchC[i] = make(chan struct{})
-			}
-
-			go func(i int) {
-				err := u.fetch(ctx, h, layers[i:], fetchC)
-				if err != nil {
-					fetchErr <- err
-				}
-				close(fetchErr)
-			}(i)
+			layersToFetch := layers[i:]
+			fetchC, fetchErr = u.fetchAsync(ctx, layersToFetch, h)
 		}
 
+		// wait for an error or this layer to complete
 		select {
 		case <-ctx.Done():
 			cleanup.Do(ctx, abort)
@@ -375,7 +658,7 @@ func (u *Unpacker) unpack(
 				cleanup.Do(ctx, abort)
 				return err
 			}
-		case <-fetchC[i-fetchOffset]:
+		case <-fetchC[i]:
 		}
 
 		diff, err := a.Apply(ctx, desc, mounts, unpack.ApplyOpts...)
@@ -442,6 +725,23 @@ func (u *Unpacker) unpack(
 	}).Debug("image unpacked")
 
 	return nil
+}
+
+func (u *Unpacker) fetchAsync(ctx context.Context, layers []ocispec.Descriptor, h images.Handler) ([]chan struct{}, chan error) {
+	fetchErr := make(chan error, 1)
+	fetchDone := make([]chan struct{}, len(layers))
+	for i := range fetchDone {
+		fetchDone[i] = make(chan struct{})
+	}
+
+	go func(layers []ocispec.Descriptor) {
+		err := u.fetch(ctx, h, layers, fetchDone)
+		if err != nil {
+			fetchErr <- err
+		}
+		close(fetchErr)
+	}(layers)
+	return fetchDone, fetchErr
 }
 
 func (u *Unpacker) fetch(ctx context.Context, h images.Handler, layers []ocispec.Descriptor, done []chan struct{}) error {
