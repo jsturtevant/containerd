@@ -208,6 +208,7 @@ func (ts *localTransferService) pull(ctx context.Context, ir transfer.ImageFetch
 	if err != nil {
 
 	}
+
 	if newDesc, ok := wasmInfo.Labels["wasm-unpacked"]; ok {
 		if desc.Annotations == nil {
 			desc.Annotations = map[string]string{}
