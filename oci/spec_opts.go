@@ -1622,3 +1622,27 @@ func WithWindowsNetworkNamespace(ns string) SpecOpts {
 		return nil
 	}
 }
+
+func WithWasmLayers(descriptors []v1.Descriptor) SpecOpts {
+	return func(_ context.Context, _ Client, _ *containers.Container, s *Spec) error {
+		if s.Annotations == nil {
+			s.Annotations = make(map[string]string)
+		}
+		for _, descriptor := range descriptors {
+			switch descriptor.MediaType {
+			case "application/vnd.w3c.wasm.module.v1+wasm", "application/vnd.wasm.component.config.v1+json":
+				// should only be one of each
+				s.Annotations[descriptor.MediaType] = descriptor.Digest.String()
+			case "application/vnd.w3c.wasm.component.v1+wasm":
+				// append them together
+				modules := descriptor.Digest.String()
+				if existing, ok := s.Annotations["application/vnd.w3c.wasm.component.v1+wasm"]; ok {
+					modules = existing + "," + modules
+				}
+				s.Annotations[descriptor.MediaType] = modules
+			}
+		}
+
+		return nil
+	}
+}

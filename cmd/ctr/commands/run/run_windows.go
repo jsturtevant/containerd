@@ -19,6 +19,7 @@ package run
 import (
 	gocontext "context"
 	"errors"
+	"github.com/containerd/containerd/images"
 	"strings"
 
 	"github.com/Microsoft/hcsshim/cmd/containerd-shim-runhcs-v1/options"
@@ -106,6 +107,18 @@ func NewContainer(ctx gocontext.Context, client *containerd.Client, context *cli
 				image,
 				snapshots.WithLabels(commands.LabelArgs(context.StringSlice("snapshotter-label")))),
 			containerd.WithAdditionalContainerLabels(labels))
+
+		imageSpec, err := image.Spec(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if imageSpec.OS == "wasi" {
+			manifest, err := images.Manifest(ctx, image.ContentStore(), image.Target(), nil)
+			if err != nil {
+				return nil, err
+			}
+			opts = append(opts, oci.WithWasmLayers(manifest.Layers))
+		}
 
 		if len(args) > 0 {
 			opts = append(opts, oci.WithProcessArgs(args...))

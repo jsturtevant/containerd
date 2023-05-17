@@ -18,7 +18,13 @@ package v2
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/containerd/containerd/content"
+	"github.com/containerd/typeurl/v2"
+	"github.com/opencontainers/go-digest"
+	"github.com/opencontainers/runtime-spec/specs-go"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -82,6 +88,11 @@ func init() {
 			ss := metadata.NewSandboxStore(m.(*metadata.DB))
 			events := ep.(*exchange.Exchange)
 
+			contentStore, err := ic.Get(plugin.ContentPlugin)
+			if err != nil {
+				return nil, err
+			}
+
 			shimManager, err := NewShimManager(ic.Context, &ManagerConfig{
 				Root:         ic.Root,
 				State:        ic.State,
@@ -91,6 +102,7 @@ func init() {
 				Store:        cs,
 				SchedCore:    config.SchedCore,
 				SandboxStore: ss,
+				ContentStore: contentStore.(content.Store),
 			})
 			if err != nil {
 				return nil, err
@@ -128,6 +140,7 @@ type ManagerConfig struct {
 	TTRPCAddress string
 	SchedCore    bool
 	SandboxStore sandbox.Store
+	ContentStore content.Store
 }
 
 // NewShimManager creates a manager for v2 shims
@@ -148,6 +161,7 @@ func NewShimManager(ctx context.Context, config *ManagerConfig) (*ShimManager, e
 		containers:             config.Store,
 		schedCore:              config.SchedCore,
 		sandboxStore:           config.SandboxStore,
+		contentStore:           config.ContentStore,
 	}
 
 	if err := m.loadExistingTasks(ctx); err != nil {
@@ -173,6 +187,7 @@ type ShimManager struct {
 	// runtimePaths is a cache of `runtime names` -> `resolved fs path`
 	runtimePaths sync.Map
 	sandboxStore sandbox.Store
+	contentStore content.Store
 }
 
 // ID of the shim manager
@@ -226,6 +241,39 @@ func (m *ShimManager) Start(ctx context.Context, id string, opts runtime.CreateO
 		return shim, nil
 	}
 
+	if typeurl.Is(opts.Spec, &specs.Spec{}) {
+		spec := &specs.Spec{}
+		err := json.Unmarshal(opts.Spec.GetValue(), &spec)
+		if err != nil {
+			return nil, err
+		}
+
+		if isWasm(spec) {
+			wasmfs := filepath.Join(bundle.Path, "wasm")
+			if err := os.MkdirAll(wasmfs, 0711); err != nil {
+				return nil, err
+			}
+
+			for k, componentDigest := range spec.Annotations {
+				switch k {
+				case "application/vnd.w3c.wasm.module.v1+wasm", "application/vnd.wasm.component.config.v1+json":
+					err = write_wasm_component(ctx, m.contentStore, wasmfs, componentDigest)
+					if err != nil {
+						return nil, err
+					}
+				case "application/vnd.w3c.wasm.component.v1+wasm":
+					components := strings.Split(componentDigest, ",")
+					for _, component := range components {
+						err = write_wasm_component(ctx, m.contentStore, wasmfs, component)
+						if err != nil {
+							return nil, err
+						}
+					}
+				}
+			}
+		}
+	}
+
 	shim, err := m.startShim(ctx, bundle, id, opts)
 	if err != nil {
 		return nil, err
@@ -241,6 +289,44 @@ func (m *ShimManager) Start(ctx context.Context, id string, opts runtime.CreateO
 	}
 
 	return shim, nil
+}
+
+func write_wasm_component(ctx context.Context, store content.Store, wasmfs string, componentDigest string) error {
+	desc := ocispec.Descriptor{Digest: digest.Digest(componentDigest)}
+	componentReader, err := store.ReaderAt(ctx, desc)
+	if err != nil {
+		return err
+	}
+	defer componentReader.Close()
+
+	filename := shaOnly(desc)
+	cf, err := os.OpenFile(filepath.Join(wasmfs, filename), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	io.Copy(cf, content.NewReader(componentReader))
+	err = cf.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func shaOnly(desc ocispec.Descriptor) string {
+	return strings.TrimPrefix(desc.Digest.String(), "sha256:")
+}
+
+func isWasm(spec *specs.Spec) bool {
+	if _, ok := spec.Annotations["application/vnd.w3c.wasm.module.v1+wasm"]; ok {
+		return true
+	}
+	if _, ok := spec.Annotations["application/vnd.w3c.wasm.component.v1+wasm"]; ok {
+		return true
+	}
+	if _, ok := spec.Annotations["application/vnd.wasm.component.config.v1+json"]; ok {
+		return true
+	}
+	return false
 }
 
 func (m *ShimManager) startShim(ctx context.Context, bundle *Bundle, id string, opts runtime.CreateOpts) (*shim, error) {

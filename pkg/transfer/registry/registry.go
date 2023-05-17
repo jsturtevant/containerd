@@ -60,6 +60,7 @@ func NewOCIRegistry(ref string, headers http.Header, creds CredentialHelper) *OC
 
 	ropts := []docker.RegistryOpt{
 		docker.WithAuthorizer(docker.NewDockerAuthorizer(aopts...)),
+		docker.WithPlainHTTP(docker.MatchLocalhost),
 	}
 
 	// TODO: Apply local configuration, maybe dynamically create resolver when requested
@@ -238,6 +239,7 @@ func (r *OCIRegistry) UnmarshalAny(ctx context.Context, sm streaming.StreamGette
 	}
 	authorizer := docker.NewDockerAuthorizer(aopts...)
 	ropts = append(ropts, docker.WithAuthorizer(authorizer))
+	ropts = append(ropts, docker.WithPlainHTTP(docker.MatchLocalhost))
 
 	r.reference = s.Reference
 	r.resolver = docker.NewResolver(docker.ResolverOptions{

@@ -19,15 +19,14 @@ package v2
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"runtime"
-
 	"github.com/containerd/containerd/identifiers"
 	"github.com/containerd/containerd/mount"
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/typeurl/v2"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"os"
+	"path/filepath"
+	"runtime"
 )
 
 const configFilename = "config.json"
@@ -112,6 +111,7 @@ func NewBundle(ctx context.Context, root, state, id string, spec typeurl.Any) (b
 			return nil, fmt.Errorf("failed to write %s", configFilename)
 		}
 	}
+
 	return b, nil
 }
 
