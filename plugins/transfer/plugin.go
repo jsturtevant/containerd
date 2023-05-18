@@ -166,6 +166,11 @@ func defaultConfig() *transferConfig {
 				Snapshotter: containerd.DefaultSnapshotter,
 				Differ:      "windows",
 			},
+			{
+				Platform:    "wasi/wasm",
+				Snapshotter: containerd.DefaultSnapshotter,
+				Differ:      "windows",
+			},
 		},
 	}
 }

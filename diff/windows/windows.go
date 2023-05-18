@@ -144,6 +144,14 @@ func (s windowsDiff) Apply(ctx context.Context, desc ocispec.Descriptor, mounts 
 		return emptyDesc, err
 	}
 
+	if desc.MediaType == "application/vnd.oci.scratch.v1+json" {
+		return ocispec.Descriptor{
+			MediaType: ocispec.MediaTypeImageLayer,
+			Size:      2,
+			Digest:    "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+		}, nil
+	}
+
 	archiveOpts := []archive.ApplyOpt{
 		archive.WithParents(parentLayerPaths),
 		archive.AsWindowsContainerLayer(),

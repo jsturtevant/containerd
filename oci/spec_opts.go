@@ -380,7 +380,7 @@ func WithImageConfigArgs(image Image, args []string) SpecOpts {
 			config           v1.ImageConfig
 		)
 		switch ic.MediaType {
-		case v1.MediaTypeImageConfig, images.MediaTypeDockerSchema2Config:
+		case v1.MediaTypeImageConfig, images.MediaTypeDockerSchema2Config, "application/vnd.w3c.wasm.module.v1+json":
 			var err error
 			imageConfigBytes, err = content.ReadBlob(ctx, image.ContentStore(), ic)
 			if err != nil {

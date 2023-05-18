@@ -81,7 +81,7 @@ func DiffCompression(ctx context.Context, mediaType string) (string, error) {
 			return "", nil
 		}
 		return "gzip", nil
-	case ocispec.MediaTypeImageLayer, ocispec.MediaTypeImageLayerNonDistributable: //nolint:staticcheck // Non-distributable layers are deprecated
+	case ocispec.MediaTypeImageLayer, ocispec.MediaTypeImageLayerNonDistributable, "application/vnd.oci.scratch.v1": //nolint:staticcheck // Non-distributable layers are deprecated
 		if len(ext) > 0 {
 			switch ext[len(ext)-1] {
 			case "gzip":
@@ -132,7 +132,7 @@ func IsLayerType(mt string) bool {
 	// Parse Docker media types, strip off any + suffixes first
 	switch base, _ := parseMediaTypes(mt); base {
 	case MediaTypeDockerSchema2Layer, MediaTypeDockerSchema2LayerGzip,
-		MediaTypeDockerSchema2LayerForeign, MediaTypeDockerSchema2LayerForeignGzip:
+		MediaTypeDockerSchema2LayerForeign, MediaTypeDockerSchema2LayerForeignGzip, "application/vnd.oci.scratch.v1":
 		return true
 	}
 	return false

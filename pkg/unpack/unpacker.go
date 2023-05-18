@@ -203,7 +203,7 @@ func (u *Unpacker) Unpack(h images.Handler) images.Handler {
 			lock.Unlock()
 
 			children = nonLayers
-		case images.MediaTypeDockerSchema2Config, ocispec.MediaTypeImageConfig:
+		case images.MediaTypeDockerSchema2Config, ocispec.MediaTypeImageConfig, "application/vnd.w3c.wasm.module.v1+json":
 			lock.Lock()
 			l := layers[desc.Digest]
 			lock.Unlock()
@@ -318,6 +318,9 @@ func (u *Unpacker) unpack(
 		for try := 1; try <= 3; try++ {
 			// Prepare snapshot with from parent, label as root
 			key = fmt.Sprintf(snapshots.UnpackKeyFormat, uniquePart(), chainID)
+			if desc.MediaType == "application/vnd.oci.scratch.v1+json" {
+				key = fmt.Sprintf(uniquePart(), chainID)
+			}
 			mounts, err = sn.Prepare(ctx, key, parent.String(), opts...)
 			if err != nil {
 				if errdefs.IsAlreadyExists(err) {
