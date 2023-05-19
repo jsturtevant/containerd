@@ -80,9 +80,14 @@ func MakeRefKey(ctx context.Context, desc ocispec.Descriptor) string {
 		return "layer-" + key
 	case images.IsKnownConfig(mt):
 		return "config-" + key
-	//case mt == "application/vnd.w3c.wasm.module.v1+wasm" || mt == "application/vnd.w3c.wasm.component.v1+wasm" ||
-	//	mt == "application/vnd.wasm.component.config.v1+json" || mt == "application/vnd.w3c.wasm.module.v1+json":
-	//	return "wasm-" + key
+	case mt == "application/vnd.w3c.wasm.module.v1+wasm":
+		return "wasm-module-" + key
+	case mt == "application/vnd.w3c.wasm.component.v1+wasm":
+		return "wasm-component-" + key
+	case mt == "application/vnd.wasm.component.config.v1+json":
+		return "wasm-component-config-" + key
+	case mt == "application/vnd.w3c.wasm.module.v1+json":
+		return "wasm-image-config-" + key
 	default:
 		log.G(ctx).Warnf("reference for unknown type: %s", mt)
 		return "unknown-" + key
