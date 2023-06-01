@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="27fac659-5728-4e63-84d8-2785da230799" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/image.go" beforeDir="false" afterPath="$PROJECT_DIR$/image.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../Program Files/Go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2JsWaa1PYODntG1rZvDh1rPvLA0" />
+  <component name="ProjectViewState">
+    <option name="autoscrollFromSource" value="true" />
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.vendoring.notification.had.been.shown&quot;: &quot;true&quot;,
+    &quot;ShowUsagesActions.previewPropertyKey&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/jstur/projects/hcsshim&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.goide.configuration.GoProjectSettingsConfigurable&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="GoExtractInterfaceDialog.RECENT_KEY">
+      <recent name="$PROJECT_DIR$/pkg/transfer" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Build.ctr wasm run module no layer  (1)">
+    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="containerd" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="-c config.toml -l trace" />
+      <envs>
+        <env name="DEBUG_DECODER" value="true" />
+      </envs>
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/containerd" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr -base hpc import" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="image import --index-name=hpc .\windows-host-process-containers-base-image.tar " />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr hpc pull" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="i pull --local=false mcr.microsoft.com/oss/kubernetes/windows-host-process-containers-base-image:v1.0.0" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr image usage" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="i usage localhost:5000/wasi-demo:latest" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr nano pull " type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="i pull --local=false mcr.microsoft.com/dotnet/framework/aspnet:4.8.1" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr wasm component pull (1)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="i pull --local=false localhost:5000/wasi-components:component" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr wasm import" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="image import --all-platforms .\img.tar" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr wasm pull" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="i pull --local=false localhost:5000/wasi-demo:latest" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr wasm run components " type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="run --rm --runtime=io.containerd.wasmtime.v1 docker.io/jsturtevant/wasi-components:scratch testwasm" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr wasm run module no layer  (1)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="run --rm --runtime=io.containerd.wasmtime.v1 localhost:5000/wasi-components:no-layer testwasm" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr wasm run" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="run --rm --runtime=io.containerd.wasmtime.v1 ghcr.io/containerd/runwasi/wasi-demo-app:latest testwasm" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="ctr wasm scratch pull (2)" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <parameters value="i pull --local=false  --platform &quot;wasi/wasm&quot;  docker.io/jsturtevant/wasi-components:scratch" />
+      <sudo value="true" />
+      <kind value="DIRECTORY" />
+      <package value="github.com/container" />
+      <directory value="$PROJECT_DIR$/cmd/ctr" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestNaive in github.com/containerd/containerd/snapshots/native" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/snapshots/native" />
+      <sudo value="true" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/containerd/containerd/snapshots/native" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestNaive\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Test_criService_podSandboxStats in github.com/containerd/containerd/pkg/cri/server" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/pkg/cri/server" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/containerd/containerd/pkg/cri/server" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTest_criService_podSandboxStats\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Test_criService_saveSandBoxMetrics in github.com/containerd/containerd/pkg/cri/server (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/pkg/cri/server" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/containerd/containerd/pkg/cri/server" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTest_criService_saveSandBoxMetrics\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test github.com/containerd/containerd/pkg/cri/server" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/pkg/cri/server" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/containerd/containerd/pkg/cri/server" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test github.com/containerd/containerd/snapshots/native" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="containerd" />
+      <working_directory value="$PROJECT_DIR$/snapshots/native" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/containerd/containerd/snapshots/native" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Go Build.containerd" />
+      <item itemvalue="Go Build.ctr -base hpc import" />
+      <item itemvalue="Go Build.ctr wasm pull" />
+      <item itemvalue="Go Build.ctr wasm component pull (1)" />
+      <item itemvalue="Go Build.ctr wasm scratch pull (2)" />
+      <item itemvalue="Go Build.ctr hpc pull" />
+      <item itemvalue="Go Build.ctr nano pull " />
+      <item itemvalue="Go Build.ctr wasm import" />
+      <item itemvalue="Go Build.ctr wasm run" />
+      <item itemvalue="Go Build.ctr wasm run components " />
+      <item itemvalue="Go Build.ctr wasm run module no layer  (1)" />
+      <item itemvalue="Go Build.ctr image usage" />
+      <item itemvalue="Go Test.TestNaive in github.com/containerd/containerd/snapshots/native" />
+      <item itemvalue="Go Test.go test github.com/containerd/containerd/snapshots/native" />
+      <item itemvalue="Go Test.Test_criService_podSandboxStats in github.com/containerd/containerd/pkg/cri/server" />
+      <item itemvalue="Go Test.Test_criService_saveSandBoxMetrics in github.com/containerd/containerd/pkg/cri/server (1)" />
+      <item itemvalue="Go Test.go test github.com/containerd/containerd/pkg/cri/server" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.TestNaive in github.com/containerd/containerd/snapshots/native" />
+        <item itemvalue="Go Test.go test github.com/containerd/containerd/snapshots/native" />
+        <item itemvalue="Go Test.Test_criService_podSandboxStats in github.com/containerd/containerd/pkg/cri/server" />
+        <item itemvalue="Go Test.go test github.com/containerd/containerd/pkg/cri/server" />
+        <item itemvalue="Go Test.Test_criService_saveSandBoxMetrics in github.com/containerd/containerd/pkg/cri/server (1)" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/cri/server/container_create.go</url>
+          <line>160</line>
+          <option name="timeStamp" value="30" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/cri/server/container_stats_list_linux.go</url>
+          <line>49</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/archive/tar.go</url>
+          <line>154</line>
+          <option name="timeStamp" value="39" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/container.go</url>
+          <line>262</line>
+          <option name="timeStamp" value="98" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/container.go</url>
+          <line>304</line>
+          <option name="timeStamp" value="100" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rootfs/apply.go</url>
+          <line>100</line>
+          <option name="timeStamp" value="124" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/ctr/commands/images/pull.go</url>
+          <line>185</line>
+          <option name="timeStamp" value="178" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/image.go</url>
+          <line>405</line>
+          <option name="timeStamp" value="185" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/image.go</url>
+          <line>397</line>
+          <option name="timeStamp" value="186" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rootfs/apply.go</url>
+          <line>124</line>
+          <option name="timeStamp" value="187" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rootfs/apply.go</url>
+          <line>127</line>
+          <option name="timeStamp" value="188" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/cri/server/container_create.go</url>
+          <line>97</line>
+          <option name="timeStamp" value="197" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/diff/apply/apply.go</url>
+          <line>94</line>
+          <option name="timeStamp" value="230" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/rootfs/apply.go</url>
+          <line>161</line>
+          <option name="timeStamp" value="237" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/image.go</url>
+          <line>382</line>
+          <option name="timeStamp" value="240" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/metadata/content.go</url>
+          <line>106</line>
+          <option name="timeStamp" value="248" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/metadata/content.go</url>
+          <line>213</line>
+          <option name="timeStamp" value="249" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/metadata/content.go</url>
+          <line>702</line>
+          <option name="timeStamp" value="250" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/client.go</url>
+          <line>539</line>
+          <option name="timeStamp" value="277" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/task.go</url>
+          <line>658</line>
+          <option name="timeStamp" value="278" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/remotes/docker/converter.go</url>
+          <line>78</line>
+          <option name="timeStamp" value="281" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/remotes/docker/schema1/converter.go</url>
+          <line>213</line>
+          <option name="timeStamp" value="282" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/diff/windows/windows.go</url>
+          <line>153</line>
+          <option name="timeStamp" value="333" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/diff/windows/windows.go</url>
+          <line>155</line>
+          <option name="timeStamp" value="334" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>393</line>
+          <option name="timeStamp" value="335" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>403</line>
+          <option name="timeStamp" value="336" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>323</line>
+          <option name="timeStamp" value="337" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/oci/spec.go</url>
+          <line>89</line>
+          <option name="timeStamp" value="348" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/platforms/platforms.go</url>
+          <line>248</line>
+          <option name="timeStamp" value="355" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/transfer/local/progress.go</url>
+          <line>103</line>
+          <option name="timeStamp" value="362" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/remotes/handlers.go</url>
+          <line>92</line>
+          <option name="timeStamp" value="375" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>211</line>
+          <option name="timeStamp" value="379" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>326</line>
+          <option name="timeStamp" value="380" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>287</line>
+          <option name="timeStamp" value="381" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>363</line>
+          <option name="timeStamp" value="382" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/pkg/unpack/unpacker.go</url>
+          <line>299</line>
+          <option name="timeStamp" value="383" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/image.go</url>
+          <line>370</line>
+          <option name="timeStamp" value="388" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

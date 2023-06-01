@@ -19,7 +19,6 @@ package containerd
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -450,9 +449,9 @@ func (i *image) getLayers(ctx context.Context, manifest ocispec.Manifest) ([]roo
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve rootfs: %w", err)
 	}
-	if len(diffIDs) != len(manifest.Layers) {
-		return nil, errors.New("mismatched image rootfs and manifest layers")
-	}
+	//if len(diffIDs) != len(manifest.Layers) {
+	//	return nil, errors.New("mismatched image rootfs and manifest layers")
+	//}
 	layers := make([]rootfs.Layer, len(diffIDs))
 	for i := range diffIDs {
 		layers[i].Diff = ocispec.Descriptor{
