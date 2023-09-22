@@ -261,7 +261,7 @@ func (c *criService) CreateContainer(ctx context.Context, r *runtime.CreateConta
 		return nil, fmt.Errorf("failed to get container spec opts: %w", err)
 	}
 
-	if platform.OS == "wasi" {
+	if image.ImageSpec.OS == "wasi" {
 		manifest, err := images.Manifest(ctx, c.client.ContentStore(), containerdImage.Target(), nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to set wasi layers: %w", err)
