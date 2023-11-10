@@ -37,6 +37,7 @@ import (
 	"github.com/opencontainers/image-spec/identity"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/urfave/cli"
+	orasremote "oras.land/oras-go/v2/registry/remote"
 )
 
 var pullCommand = cli.Command{
@@ -82,6 +83,10 @@ command. As part of this process, we do the following:
 		cli.BoolTFlag{
 			Name:  "local",
 			Usage: "Fetch content from local client rather than using transfer service",
+		},
+		cli.BoolTFlag{
+			Name:  "fetch-referrers",
+			Usage: "Fetch referrers",
 		},
 	),
 	Action: func(context *cli.Context) error {
@@ -156,6 +161,58 @@ command. As part of this process, we do the following:
 		img, err := content.Fetch(ctx, client, ref, config)
 		if err != nil {
 			return err
+		}
+
+		if context.Bool("fetch-referrers") {
+			fmt.Printf("fetching refferrer\n")
+			referrersRemote, err := orasremote.NewRepository(ref)
+			//referrersRemote.PlainHTTP = true
+			if err != nil {
+				return err
+			}
+			var results []ocispec.Descriptor
+			err = referrersRemote.Referrers(ctx, img.Target, "", func(referrers []ocispec.Descriptor) error {
+				results = append(results, referrers...)
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+
+			if len(results) == 0 {
+				return fmt.Errorf("no referrers found")
+			}
+
+			referrerImage := strings.SplitAfter(ref, ":/")[0]
+			referrerReference := referrerImage + "@" + results[0].Digest.String()
+
+			fmt.Printf("fetching referrer %s\n", referrerReference)
+			config.Labels = append(config.Labels, fmt.Sprintf("containerd.io/original=%s", img.Target.Digest.String()))
+
+			_, err = content.Fetch(ctx, client, referrerReference, config)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("referrer pulled\n")
+
+			var (
+				is         = client.ImageService()
+				fieldpaths []string
+			)
+			fmt.Printf("updating original %s with label %s\n", ref, results[0].Digest.String())
+			labels := map[string]string{"containerd.io/referrers": results[0].Digest.String()}
+			image := images.Image{
+				Name:   ref,
+				Labels: labels,
+			}
+
+			fieldpaths = append(fieldpaths, "labels")
+			_, err = is.Update(ctx, image, fieldpaths...)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("complete\n")
 		}
 
 		log.G(ctx).WithField("image", ref).Debug("unpacking")
