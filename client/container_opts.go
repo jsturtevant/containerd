@@ -119,7 +119,8 @@ func WithImageConfigLabels(image Image) NewContainerOpts {
 		if err != nil {
 			return err
 		}
-		if !images.IsConfigType(ic.MediaType) {
+
+		if !images.IsConfigType(ic.MediaType) && !images.IsKnownArtifact(ic.MediaType) {
 			return fmt.Errorf("unknown image config media type %s", ic.MediaType)
 		}
 

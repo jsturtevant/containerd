@@ -369,6 +369,11 @@ func WithImageConfigArgs(image Image, args []string) SpecOpts {
 		if err != nil {
 			return err
 		}
+
+		if images.IsKnownArtifact(ic.MediaType) {
+			return nil
+		}
+
 		if !images.IsConfigType(ic.MediaType) {
 			return fmt.Errorf("unknown image config media type %s", ic.MediaType)
 		}

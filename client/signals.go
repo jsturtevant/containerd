@@ -57,6 +57,11 @@ func GetOCIStopSignal(ctx context.Context, image Image, defaultSignal string) (s
 	if err != nil {
 		return "", err
 	}
+
+	if images.IsKnownArtifact(ic.MediaType) {
+		return defaultSignal, nil
+	}
+
 	if !images.IsConfigType(ic.MediaType) {
 		return "", fmt.Errorf("unknown image config media type %s", ic.MediaType)
 	}
