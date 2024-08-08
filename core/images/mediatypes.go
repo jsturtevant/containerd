@@ -58,6 +58,10 @@ const (
 
 	MediaTypeImageLayerEncrypted     = ocispec.MediaTypeImageLayer + "+encrypted"
 	MediaTypeImageLayerGzipEncrypted = ocispec.MediaTypeImageLayerGzip + "+encrypted"
+
+	// known artifact types
+	MediaTypeArtifactWasm      = "application/vnd.wasm.config.v0+json"
+	MediaTypeArtifactWasmLayer = "application/wasm"
 )
 
 // DiffCompression returns the compression as defined by the layer diff media
@@ -188,6 +192,14 @@ func IsKnownConfig(mt string) bool {
 	switch mt {
 	case MediaTypeDockerSchema2Config, ocispec.MediaTypeImageConfig,
 		MediaTypeContainerd1Checkpoint, MediaTypeContainerd1CheckpointConfig:
+		return true
+	}
+	return false
+}
+
+func IsKnownArtifact(mt string) bool {
+	switch mt {
+	case MediaTypeArtifactWasm, MediaTypeArtifactWasmLayer:
 		return true
 	}
 	return false
