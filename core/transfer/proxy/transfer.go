@@ -28,6 +28,7 @@ import (
 
 	transferapi "github.com/containerd/containerd/api/services/transfer/v1"
 	transfertypes "github.com/containerd/containerd/api/types/transfer"
+	"github.com/containerd/containerd/v2/core/remotes"
 	"github.com/containerd/containerd/v2/core/streaming"
 	"github.com/containerd/containerd/v2/core/transfer"
 	tstreaming "github.com/containerd/containerd/v2/core/transfer/streaming"
@@ -37,6 +38,7 @@ import (
 	"github.com/containerd/ttrpc"
 	"github.com/containerd/typeurl/v2"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	grpcmeta "google.golang.org/grpc/metadata"
 )
 
 type proxyTransferrer struct {
@@ -88,6 +90,25 @@ func (p *proxyTransferrer) Transfer(ctx context.Context, src interface{}, dst in
 	for _, opt := range opts {
 		opt(o)
 	}
+
+	prefixkeys := remotes.FromContextMediaTypeKey(ctx)
+	if prefixkeys != nil {
+		prefixes := ""
+		for key, value := range prefixkeys {
+			prefixes += fmt.Sprintf("%s=%s,", key, value)
+		}
+
+		nsheader := grpcmeta.Pairs("prefixes", prefixes)
+		md, ok := grpcmeta.FromOutgoingContext(ctx) // merge with outgoing context.
+		if !ok {
+			md = nsheader
+		} else {
+			// order ensures the latest is first in this list.
+			md = grpcmeta.Join(nsheader, md)
+		}
+		ctx = grpcmeta.NewOutgoingContext(ctx, md)
+	}
+
 	apiOpts := &transferapi.TransferOptions{}
 	if o.Progress != nil {
 		sid := tstreaming.GenerateID("progress")

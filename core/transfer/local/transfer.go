@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/containerd/typeurl/v2"
@@ -28,11 +29,13 @@ import (
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/core/images"
 	"github.com/containerd/containerd/v2/core/leases"
+	"github.com/containerd/containerd/v2/core/remotes"
 	"github.com/containerd/containerd/v2/core/transfer"
 	"github.com/containerd/containerd/v2/core/unpack"
 	"github.com/containerd/containerd/v2/internal/kmutex"
 	"github.com/containerd/containerd/v2/pkg/imageverifier"
 	"github.com/containerd/errdefs"
+	grpcmeta "google.golang.org/grpc/metadata"
 )
 
 type localTransferService struct {
@@ -64,6 +67,27 @@ func (ts *localTransferService) Transfer(ctx context.Context, src interface{}, d
 	topts := &transfer.Config{}
 	for _, opt := range opts {
 		opt(topts)
+	}
+
+	// try to extract for use in grpc servers.
+	md, ok := grpcmeta.FromIncomingContext(ctx)
+	if ok {
+		values := md["prefixes"]
+
+		if len(values) > 0 {
+			prefixesKeys := make(map[string]string)
+			//split the values by comma and = to get the key value pairs
+			for _, value := range values {
+				prefixes := strings.Split(value, ",")
+				for _, prefix := range prefixes {
+					kv := strings.Split(prefix, "=")
+					if len(kv) == 2 {
+						prefixesKeys[kv[0]] = kv[1]
+					}
+				}
+			}
+			ctx = remotes.WithMediaTypeKeyPrefixes(ctx, prefixesKeys)
+		}
 	}
 
 	// Figure out matrix of whether source destination combination is supported

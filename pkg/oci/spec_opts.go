@@ -32,6 +32,7 @@ import (
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/core/images"
 	"github.com/containerd/containerd/v2/core/mount"
+	"github.com/containerd/containerd/v2/core/remotes"
 	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"github.com/containerd/continuity/fs"
 	"github.com/containerd/log"
@@ -369,6 +370,10 @@ func WithImageConfigArgs(image Image, args []string) SpecOpts {
 		if err != nil {
 			return err
 		}
+		if images.IsCustomType(ic.MediaType, remotes.FromContextMediaTypeKey(ctx)) {
+			return nil
+		}
+
 		if !images.IsConfigType(ic.MediaType) {
 			return fmt.Errorf("unknown image config media type %s", ic.MediaType)
 		}

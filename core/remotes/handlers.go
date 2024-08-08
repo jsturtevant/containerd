@@ -53,6 +53,17 @@ func WithMediaTypeKeyPrefix(ctx context.Context, mediaType, prefix string) conte
 	return context.WithValue(ctx, refKeyPrefix{}, values)
 }
 
+func WithMediaTypeKeyPrefixes(ctx context.Context, prefixes map[string]string) context.Context {
+	return context.WithValue(ctx, refKeyPrefix{}, prefixes)
+}
+
+func FromContextMediaTypeKey(ctx context.Context) map[string]string {
+	if v := ctx.Value(refKeyPrefix{}); v != nil {
+		return v.(map[string]string)
+	}
+	return nil
+}
+
 // MakeRefKey returns a unique reference for the descriptor. This reference can be
 // used to lookup ongoing processes related to the descriptor. This function
 // may look to the context to namespace the reference appropriately.

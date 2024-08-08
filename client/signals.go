@@ -24,6 +24,7 @@ import (
 
 	"github.com/containerd/containerd/v2/core/content"
 	"github.com/containerd/containerd/v2/core/images"
+	"github.com/containerd/containerd/v2/core/remotes"
 	"github.com/moby/sys/signal"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
@@ -57,6 +58,11 @@ func GetOCIStopSignal(ctx context.Context, image Image, defaultSignal string) (s
 	if err != nil {
 		return "", err
 	}
+
+	if images.IsCustomType(ic.MediaType, remotes.FromContextMediaTypeKey(ctx)) {
+		return defaultSignal, nil
+	}
+
 	if !images.IsConfigType(ic.MediaType) {
 		return "", fmt.Errorf("unknown image config media type %s", ic.MediaType)
 	}

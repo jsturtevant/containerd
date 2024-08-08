@@ -33,6 +33,7 @@ import (
 	"github.com/containerd/containerd/v2/contrib/nvidia"
 	"github.com/containerd/containerd/v2/contrib/seccomp"
 	"github.com/containerd/containerd/v2/core/containers"
+	"github.com/containerd/containerd/v2/core/remotes"
 	"github.com/containerd/containerd/v2/core/snapshots"
 	"github.com/containerd/containerd/v2/pkg/oci"
 	"github.com/containerd/log"
@@ -112,6 +113,8 @@ func NewContainer(ctx context.Context, client *containerd.Client, cliContext *cl
 			// for container's id is Args[1]
 			args = cliContext.Args().Slice()[2:]
 		)
+		ctx = remotes.WithMediaTypeKeyPrefix(ctx, "application/vnd.wasm.config.v0+json", "wasm")
+		ctx = remotes.WithMediaTypeKeyPrefix(ctx, "application/wasm", "wasm")
 		opts = append(opts, oci.WithDefaultSpec(), oci.WithDefaultUnixDevices)
 		if ef := cliContext.String("env-file"); ef != "" {
 			opts = append(opts, oci.WithEnvFile(ef))

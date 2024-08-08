@@ -182,6 +182,19 @@ func IsConfigType(mt string) bool {
 	}
 }
 
+func IsCustomType(mt string, customTypes map[string]string) bool {
+	if customTypes == nil {
+		return false
+	}
+
+	_, ok := customTypes[mt]
+	if ok {
+		return true
+	}
+
+	return false
+}
+
 // IsKnownConfig returns true if the media type is a known config type,
 // including containerd checkpoint configs
 func IsKnownConfig(mt string) bool {

@@ -29,6 +29,7 @@ import (
 	"github.com/containerd/containerd/v2/cmd/ctr/commands"
 	"github.com/containerd/containerd/v2/cmd/ctr/commands/content"
 	"github.com/containerd/containerd/v2/core/images"
+	"github.com/containerd/containerd/v2/core/remotes"
 	"github.com/containerd/containerd/v2/core/transfer"
 	"github.com/containerd/containerd/v2/core/transfer/image"
 	"github.com/containerd/containerd/v2/core/transfer/registry"
@@ -108,6 +109,9 @@ command. As part of this process, we do the following:
 					return fmt.Errorf("\"--%s\" requires \"--local\" flag", s)
 				}
 			}
+
+			ctx = remotes.WithMediaTypeKeyPrefix(ctx, "application/vnd.wasm.config.v0+json", "wasm")
+			ctx = remotes.WithMediaTypeKeyPrefix(ctx, "application/wasm", "wasm")
 
 			ch, err := commands.NewStaticCredentials(ctx, cliContext, ref)
 			if err != nil {
