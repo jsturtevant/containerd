@@ -124,7 +124,8 @@ type Runtime struct {
 	// if it is not set, the named pipe will be created for the container
 	// we can also set it to "streaming" to create a stream by streaming api,
 	// and use it as a channel to transfer the io stream
-	IOType string `toml:"io_type" json:"io_type"`
+	IOType           string            `toml:"io_type" json:"io_type"`
+	CustomMediaTypes map[string]string `toml:"custom_media_types" json:"custom_media_types"`
 }
 
 // ContainerdConfig contains toml config related to containerd
